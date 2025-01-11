@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/user.schema';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class AuthService {
@@ -13,8 +14,14 @@ export class AuthService {
 
   async create(createUserDto: CreateUserDto) {
     try {
-      const user = await this.userModel.create(createUserDto);
-      console.log(`user ${user.username} created successfully`);
+      const { password, ...userData } = createUserDto;
+
+      const user = await this.userModel.create({
+        ...userData,
+        password: bcrypt.hashSync(password, 10)
+      });
+      console.log(`user ${userData.username} created successfully`);
+
       return user;
     } catch (error) {
       this.handleDbErrors(error);
