@@ -18,6 +18,7 @@ export class User {
     @Prop({
         unique: true,
         required: true,
+        select: false
     })
     password: string;
 
