@@ -1,15 +1,18 @@
 import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User } from './schemas/user.schema';
 import { LoginUserDto, CreateUserDto } from './dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name)
-    private readonly userModel: Model<User>
+    private readonly userModel: Model<User>,
+    private readonly jwtService: JwtService,
   ) { }
 
 
@@ -22,7 +25,10 @@ export class AuthService {
       });
 
       console.log(`user ${userData.username} created successfully`);
-      return user;
+      return {
+        ...user,
+        token: this.getJwtToken({ email: user.email })
+      };
 
     } catch (error) {
       this.handleDbErrors(error);
@@ -33,11 +39,21 @@ export class AuthService {
   async login(loginUserDto: LoginUserDto) {
     const { password, email } = loginUserDto;
 
-    const user = await this.userModel.findOne({ email }).select('email password');
+    const user = (await this.userModel.findOne({ email }).select('email password')).toObject();
 
     if (!user || !bcrypt.compareSync(password, user.password))
       throw new UnauthorizedException('Invalid credentials');
-    return user;
+
+    return {
+      ...user,
+      token: this.getJwtToken({ email: user.email })
+    };
+  }
+
+
+  private getJwtToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload);
+    return token;
   }
 
 
