@@ -12,7 +12,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(
         @InjectModel(User.name)
         private readonly userModel: Model<User>,
-        configService: ConfigService
+        configService: ConfigService,
     ) {
         super({
             secretOrKey: configService.get('JWT_SECRET'),
@@ -20,8 +20,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
     async validate(payload: any): Promise<User> {
-        const { email } = payload;
-        const user = await await this.userModel.findOne({ email });
+        const { id } = payload;
+
+        console.log(id.toString())
+        const user = await this.userModel.findOne({ id });
 
         if (!user)
             throw new UnauthorizedException('Invalid token');

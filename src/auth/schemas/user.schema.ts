@@ -26,7 +26,7 @@ export class User extends Document {
     password: string;
 
     @Prop({ default: true })
-    isActive: string;
+    isActive: boolean;
 
     @Prop({ default: ['user'] })
     roles: string[];

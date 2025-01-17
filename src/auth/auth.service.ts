@@ -19,6 +19,7 @@ export class AuthService {
   async create(createUserDto: CreateUserDto) {
     try {
       const { password, ...userData } = createUserDto;
+
       const user = await this.userModel.create({
         ...userData,
         password: bcrypt.hashSync(password, 10)
@@ -26,8 +27,8 @@ export class AuthService {
 
       console.log(`user ${userData.username} created successfully`);
       return {
-        ...user,
-        token: this.getJwtToken({ email: user.email })
+        ...user.toObject(),
+        token: this.getJwtToken({ id: user._id.toString() })
       };
 
     } catch (error) {
@@ -39,14 +40,21 @@ export class AuthService {
   async login(loginUserDto: LoginUserDto) {
     const { password, email } = loginUserDto;
 
-    const user = (await this.userModel.findOne({ email }).select('email password')).toObject();
+    const rawUser = await this.userModel.findOne({ email }).select('email password id');
+
+    const user = {
+      ...rawUser.toObject(),
+      _id: rawUser._id.toString(),
+    };
+
+    console.log({ user });
 
     if (!user || !bcrypt.compareSync(password, user.password))
       throw new UnauthorizedException('Invalid credentials');
 
     return {
       ...user,
-      token: this.getJwtToken({ email: user.email })
+      token: this.getJwtToken({ id: user._id })
     };
   }
 
